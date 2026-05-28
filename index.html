@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBTI 趣味人格测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            padding: 30px 25px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 24px;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .desc {
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .progress {
+            font-size: 14px;
+            color: #a0aec0;
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        /* 题目区域 */
+        .question-box {
+            display: none;
+        }
+        .question-box.active {
+            display: block;
+        }
+
+        .question {
+            font-size: 17px;
+            color: #2d3748;
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
+
+        .option-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 14px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+        }
+
+        .option.selected {
+            background-color: #667eea;
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        /* 结果页 */
+        .result-box {
+            display: none;
+            text-align: center;
+        }
+
+        .result-name {
+            font-size: 26px;
+            color: #667eea;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .result-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #edf2f7;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .result-desc {
+            font-size: 15px;
+            color: #4a5568;
+            line-height: 1.8;
+            text-align: left;
+            padding: 10px 0;
+        }
+
+        .restart-btn {
+            margin-top: 30px;
+            padding: 12px 30px;
+            background-color: #667eea;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .restart-btn:hover {
+            background-color: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">SBTI 趣味人格测试</h1>
+        <p class="desc">纯娱乐沙雕人格测试，无科学依据，开心玩就好啦～</p>
+
+        <!-- 答题区域 -->
+        <div id="quizArea">
+            <div class="progress">第 <span id="currentNum">1</span> / <span id="totalNum">15</span> 题</div>
+
+            <!-- 题目容器，JS动态切换 -->
+            <div id="questionWrap"></div>
+        </div>
+
+        <!-- 结果展示区域 -->
+        <div class="result-box" id="resultArea">
+            <div class="result-tag" id="resultTag"></div>
+            <h2 class="result-name" id="resultName"></h2>
+            <div class="result-desc" id="resultDesc"></div>
+            <button class="restart-btn" onclick="restartTest()">重新测试</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. SBTI 测试题目 15题，每题4选项 A/B/C/D
+        const questionList = [
+            {
+                q: "周末休息，你更偏向哪种状态？",
+                opt: ["A 宅家躺平，全程不出门", "B 约朋友出门吃喝玩乐", "C 偶尔出门，大部分时间发呆", "D 忙各种琐事，根本闲不住"]
+            },
+            {
+                q: "遇到烦心事，你第一反应是？",
+                opt: ["A 独自emo，默默消化", "B 找人疯狂吐槽发泄", "C 假装没事，嘴硬到底", "D 直接摆烂，爱咋咋地"]
+            },
+            {
+                q:  "面对临时安排的任务/邀约，你会？",
+                opt: ["A 内心抗拒，但硬着头皮接受", "B 果断拒绝，不想被打扰", "C 犹豫半天，最后随缘", "D 立刻答应，觉得新鲜有趣"]
+            },
+            {
+                q: "刷手机一般会到几点睡觉？",
+                opt: ["A 熬到凌晨，越晚越精神", "B 到点就睡，作息超规律", "C 困了就放下手机睡觉", "D 间歇性熬夜，看心情"]
+            },
+            {
+                q: "别人对你的求助，你通常？",
+                opt: ["A 不好意思拒绝，有求必应", "B 量力而行，不想帮就直说", "C 表面答应，内心敷衍", "D 直接无视，不想掺和"]
+            },
+            {
+                q: "消费购物时你的心态是？",
+                opt: ["A 冲动消费，喜欢就买", "B 精打细算，只买刚需", "C 纠结半天，最后放弃", "D 大手大脚，从不心疼"]
+            },
+            {
+                q: "在人群中你属于？",
+                opt: ["A 安静透明，不爱说话", "B 活跃气氛，全场焦点", "C 熟人放得开，陌生人沉默", "D 游离在外，独自神游"]
+            },
+            {
+                q: "计划好的事情被打乱，你会？",
+                opt: ["A 心态爆炸，极度烦躁", "B 快速调整，顺其自然", "C 摆烂放弃，啥也不干了", "D 重新规划，继续执行"]
+            },
+            {
+                q: "日常精神状态更接近？",
+                opt: ["A 持续内耗，想很多事情", "B 乐天派，没心没肺", "C 时而清醒时而发疯", "D 麻木佛系，万事无所谓"]
+            },
+            {
+                q: "空闲时间首选做什么？",
+                opt: ["A 追剧/打游戏，彻底放松", "B 学习/做事，提升自己", "C 胡思乱想，放空大脑", "D 打扫整理，折腾环境"]
+            },
+            {
+                q: "被人调侃开玩笑，你会？",
+                opt: ["A 尴尬害羞，不知回应", "B 顺势互怼，玩闹回去", "C 表面微笑，心里介意", "D 直接翻脸，不喜玩笑"]
+            },
+            {
+                q: "对待未来生活的态度？",
+                opt: ["A 走一步看一步，不做长远打算", "B 规划满满，严格执行目标", "C 偶尔幻想，从不行动", "D 焦虑不安，担心未来"]
+            },
+            {
+                q: "饿了之后你的行为？",
+                opt: ["A 立刻点外卖/做饭", "B 硬扛着，能拖就拖", "C 随便找点零食凑活", "D 纠结吃什么，迟迟不下决定"]
+            },
+            {
+                q: "看到别人努力内卷，你会？",
+                opt: ["A 跟着一起卷，不敢落后", "B 冷眼旁观，坚持摆烂", "C 短暂焦虑，然后继续躺平", "D 主动远离，不想被影响"]
+            },
+            {
+                q: "一天结束后，你的感受是？",
+                opt: ["A 疲惫不堪，只想睡觉", "B 充实满足，心情不错", "C 空虚无聊，觉得虚度", "D 情绪复杂，五味杂陈"]
+            }
+        ];
+
+        // 2. SBTI 人格结果库（根据A/B/C/D选择频次判定）
+        const resultList = [
+            {
+                key: "A最多",
+                tag: "宅系闷神",
+                name: "静默躺平人格",
+                desc: "你是典型的居家爱好者，偏爱独处、不喜喧闹。内心敏感细腻，习惯把情绪藏在心里，不擅长表达。生活节奏偏慢，奉行舒服至上，不喜欢内卷和社交应酬。看似安静佛系，其实有自己丰富的小世界，只想安安稳稳过好每一天。"
+            },
+            {
+                key: "B最多",
+                tag: "快乐显眼包",
+                name: "乐天疯玩人格",
+                desc: "性格开朗外放，社交能力拉满，走到哪里都能带来欢乐。心态强大，很少被负面情绪困住，遇事直来直去不内耗。热爱新鲜事物，乐于尝试和分享，敢爱敢恨活得通透。唯一小缺点就是偶尔容易冲动，做事不太喜欢深思熟虑。"
+            },
+            {
+                key: "C最多",
+                tag: "嘴硬选手",
+                name: "口是心非人格",
+                desc: "外表故作淡定，内心戏超级丰富，典型的嘴硬心软。习惯伪装情绪，不愿让别人看到自己脆弱的一面，遇事喜欢纠结犹豫。待人温和有分寸，社交中懂得察言观色，活得比较谨慎。常常自我拉扯，在坚持和妥协之间反复横跳。"
+            },
+            {
+                key: "D最多",
+                tag: "佛系摆烂大师",
+                name: "万事随缘人格",
+                desc: "心态极度松弛，主打一个随遇而安，天塌下来也能淡定面对。讨厌束缚和条条框框，不喜欢被安排、被催促。对很多事情都看得很淡，不爱争抢也不爱计较。看似散漫，实则活得最通透，明白自己想要什么，从不勉强自己迎合他人。"
+            }
+        ];
+
+        // 全局变量
+        let currentIndex = 0;
+        let score = { A: 0, B: 0, C: 0, D: 0 };
+        const totalQ = questionList.length;
+        const questionWrap = document.getElementById("questionWrap");
+        const quizArea = document.getElementById("quizArea");
+        const resultArea = document.getElementById("resultArea");
+        const currentNumDom = document.getElementById("currentNum");
+        const totalNumDom = document.getElementById("totalNum");
+
+        // 初始化
+        window.onload = function() {
+            totalNumDom.innerText = totalQ;
+            renderQuestion();
+        };
+
+        // 渲染当前题目
+        function renderQuestion() {
+            const item = questionList[currentIndex];
+            currentNumDom.innerText = currentIndex + 1;
+
+            let html = `
+                <div class="question-box active">
+                    <p class="question">${item.q}</p>
+                    <div class="option-list">
+            `;
+            item.opt.forEach((text, idx) => {
+                const type = text.charAt(0);
+                html += `<div class="option" data-type="${type}" onclick="selectOption('${type}')">${text}</div>`;
+            });
+            html += `</div></div>`;
+            questionWrap.innerHTML = html;
+        }
+
+        // 选择选项
+        function selectOption(type) {
+            // 清除选中样式
+            const options = document.querySelectorAll(".option");
+            options.forEach(opt => opt.classList.remove("selected"));
+            // 添加选中样式
+            event.target.classList.add("selected");
+
+            // 计分
+            score[type]++;
+
+            // 延迟切换下一题，提升体验
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex >= totalQ) {
+                    // 答完所有题，展示结果
+                    showResult();
+                } else {
+                    renderQuestion();
+                }
+            }, 400);
+        }
+
+        // 展示最终结果
+        function showResult() {
+            quizArea.style.display = "none";
+            resultArea.style.display = "block";
+
+            // 判断最多的选项
+            let maxType = "A";
+            let maxCount = score.A;
+            if (score.B > maxCount) { maxType = "B"; maxCount = score.B; }
+            if (score.C > maxCount) { maxType = "C"; maxCount = score.C; }
+            if (score.D > maxCount) { maxType = "D"; maxCount = score.D; }
+
+            // 匹配结果
+            let res;
+            if(maxType === "A") res = resultList[0];
+            else if(maxType === "B") res = resultList[1];
+            else if(maxType === "C") res = resultList[2];
+            else res = resultList[3];
+
+            document.getElementById("resultTag").innerText = res.tag;
+            document.getElementById("resultName").innerText = res.name;
+            document.getElementById("resultDesc").innerText = res.desc;
+        }
+
+        // 重新测试
+        function restartTest() {
+            currentIndex = 0;
+            score = { A: 0, B: 0, C: 0, D: 0 };
+            quizArea.style.display = "block";
+            resultArea.style.display = "none";
+            renderQuestion();
+        }
+    </script>
+</body>
+</html>
